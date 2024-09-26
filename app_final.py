@@ -388,7 +388,7 @@ def display_extracted_data(json_data):
         st.write(f"Coordenadas de la dirección RUT: {coordenadas_cc}")
         if coordenadas_rut and coordenadas_cc:
             if comparar_coordenadas(coordenadas_rut, coordenadas_cc, umbral_metros=50):
-                st.success("Las direcciones están dentro del margen de 50 metros.")
+                st.success("Las direcciones están dentro del margen establecido.")
             else:
                 st.error("Las direcciones están a más de 50 metros de distancia.")
         else:
