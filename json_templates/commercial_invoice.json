@@ -1,0 +1,59 @@
+{
+    "commercial_invoice": {
+      "company": {
+        "name": "",
+        "address": "",
+        "phone": "",
+        "fax": ""
+      },
+      "invoice_to": {
+        "name": "",
+        "address": "",
+        "phone": "",
+        "fax": ""
+      },
+      "invoice_details": {
+        "reference_number": "",
+        "invoice_date": "",
+        "bill_of_lading_no": "",
+        "carrier": "",
+        "ship_to": {
+          "name": "",
+          "address": "",
+          "phone": "",
+          "fax": ""
+        },
+        "country_of_export": "",
+        "country_of_origin_of_goods": "",
+        "country_of_ultimate_destination": ""
+      },
+      "goods": [
+        {
+          "description": "",
+          "harmonized_code": "",
+          "quantity": "",
+          "unit_value": "",
+          "total_value": "",
+          "notes": [
+            "",
+            "",
+            ""
+          ]
+        }
+      ],
+      "totals": {
+        "grand_total": "",
+        "total_number_of_packages": "",
+        "total_weight": ""
+      },
+      "declaration": {
+        "statement": "",
+        "signature": {
+          "name": "",
+          "title": "",
+          "company": ""
+        }
+      }
+    }
+  }
+  
