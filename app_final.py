@@ -290,7 +290,7 @@ def display_extracted_data(json_data):
                 st.write("Detalles de los bienes:")
                 for good in goods[:6]:  # Mostrar solo los primeros 6 bienes
                     st.write(f"- Producto: {good.get('line_item_number', 'No disponible')}")
-                    st.write(f"- Número de producto: {good.get('product_number', 'No disponible')}")
+                    st.write(f"  Número de producto: {good.get('product_number', 'No disponible')}")
                     st.write(f"  Descripción: {good.get('description', 'No disponible')}")
                     st.write(f"  Cantidad: {good.get('quantity', 'No disponible')}")
                     st.write(f"  Valor unitario: {good.get('unit_value', 'No disponible')}")
