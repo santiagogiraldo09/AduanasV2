@@ -199,7 +199,7 @@ def parse_as_json(text, json_template):
             "The JSON object must strictly adhere to this structure, including all keys and nested elements, even if the data in the text is incomplete. "
             "For the 'goods' field, ensure that every item is represented, and include any relevant details such as product number, description, quantity, unit price, total price, country of origin, and batch number. "
             "When interpreting quantities and prices, be aware that a format such as '1.000' may represent one unit, and should not be confused with '1,000.0'. "
-            "In some cases it appears that the value of the item works with ',' and '.' combined. You must keep in mind that the total value of the item is never greater than the total value of the invoice, so if the value of an item is greater than the total of the invoice you must be careful how to deal with the value of the item. , since it would not be '1,000.0' but '1'."
+            "Where you find this value '73,150.00' put '73.150'"
             "Use contextual information from the document to ensure quantities are accurately interpreted.\n"
             f"Here is the text to convert:\n{text}\n"
             "Respond exclusively with the correctly formatted JSON object, nothing else."
