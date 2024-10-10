@@ -194,9 +194,12 @@ def parse_as_json(text, json_template):
     messages = [
         {"role": "system", "content": "You are an expert in data formatting and validation."},
         {"role": "user", "content": (
-            f"Convert the following text into a JSON object that **must exactly match** the structure provided in the template:\n"
+            "Convert the following text into a JSON object that **must exactly match** the structure provided in the template:\n"
             f"{json_template}\n\n"
-            "The JSON object must strictly adhere to this structure, including all keys and nested elements, even if the data in the text is incomplete."
+            "The JSON object must strictly adhere to this structure, including all keys and nested elements, even if the data in the text is incomplete. "
+            "For the 'goods' field, ensure that every item is represented, and include any relevant details such as product number, description, quantity, unit price, total price, country of origin, and batch number. "
+            "When interpreting quantities and prices, be aware that a format such as '1.000' may represent one unit, and should not be confused with '1,000.0'. "
+            "Use contextual information from the document to ensure quantities are accurately interpreted.\n"
             f"Here is the text to convert:\n{text}\n"
             "Respond exclusively with the correctly formatted JSON object, nothing else."
         )}
