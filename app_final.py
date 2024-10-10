@@ -564,13 +564,13 @@ elif selected_option == "Comparación de Documentos":
             display_extracted_data(json_data)
             # Mostrar el JSON completo
             st.subheader("JSON completo generado:")
-            #json_str = json.dumps(json_data, indent=4)
-            #st.text_area("JSON Generado:", json_str, height=300)
+            json_str = json.dumps(json_data, indent=4)
+            st.text_area("JSON Generado:", json_str, height=300)
 
             # Botón para descargar el JSON generado
             st.download_button(
                 label="Descargar JSON",
-                data=json_data,
+                data=json_str,
                 file_name="documentos_procesados.json",
                 mime="application/json"
             )
