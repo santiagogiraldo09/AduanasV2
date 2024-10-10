@@ -285,17 +285,17 @@ def display_extracted_data(json_data):
             st.write(f"País de destino final: {invoice_details.get('country_of_ultimate_destination', 'No disponible')}")
 
             # Detalles de los bienes
-            #goods = doc_data["commercial_invoice"].get("goods", [])
-            #if goods:
-                #st.write("Detalles de los bienes:")
-                #for good in goods[:3]:  # Mostrar solo los primeros 3 bienes
-                    #st.write(f"- Descripción: {good.get('description', 'No disponible')}")
-                    #st.write(f"  Cantidad: {good.get('quantity', 'No disponible')}")
-                    #st.write(f"  Valor unitario: {good.get('unit_value', 'No disponible')}")
-                    #st.write(f"  Valor total: {good.get('total_value', 'No disponible')}")
-                    #st.write(f"  Código arancelario: {good.get('harmonized_code', 'No disponible')}")
-                #if len(goods) > 3:
-                    #st.write(f"... y {len(goods) - 3} artículos más.")
+            goods = doc_data["commercial_invoice"].get("goods", [])
+            if goods:
+                st.write("Detalles de los bienes:")
+                for good in goods[:6]:  # Mostrar solo los primeros 6 bienes
+                    st.write(f"- Descripción: {good.get('description', 'No disponible')}")
+                    st.write(f"  Cantidad: {good.get('quantity', 'No disponible')}")
+                    st.write(f"  Valor unitario: {good.get('unit_value', 'No disponible')}")
+                    st.write(f"  Valor total: {good.get('total_value', 'No disponible')}")
+                    st.write(f"  Código arancelario: {good.get('harmonized_code', 'No disponible')}")
+                if len(goods) > 6:
+                    st.write(f"... y {len(goods) - 6} artículos más.")
 
             # Totales
             totals = doc_data["commercial_invoice"].get("totals", {})
@@ -385,7 +385,7 @@ def display_extracted_data(json_data):
         coordenadas_cc = obtener_coordenadas(direccion_cc_normalizada)
         #Mostrar coordenadas en pantalla
         st.write(f"Coordenadas de la dirección RUT: {coordenadas_rut}")
-        st.write(f"Coordenadas de la dirección RUT: {coordenadas_cc}")
+        st.write(f"Coordenadas de la dirección relacionada con la Cámara de Comercio: {coordenadas_cc}")
         if coordenadas_rut and coordenadas_cc:
             if comparar_coordenadas(coordenadas_rut, coordenadas_cc, umbral_metros=50):
                 st.success("Las direcciones están dentro del margen establecido.")
@@ -411,7 +411,7 @@ def process_document(uploaded_file, document_type, json_data):
 
         if extracted_text:
             #st.write(f"Texto extraído de {uploaded_file.name}:")
-            #st.text(extracted_text)
+            st.text(extracted_text)
 
             # Cargar la plantilla adecuada
             json_template = get_json_template(document_type)
