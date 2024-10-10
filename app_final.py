@@ -501,18 +501,7 @@ if selected_option == "Comparación y categorización de direcciones":
             st.write("Datos JSON extraídos de los documentos:")
             display_extracted_data(json_data)
             
-            # Mostrar el JSON completo
-            st.subheader("JSON completo generado:")
-            json_str = json.dumps(json_data, indent=4)
-            st.text_area("JSON Generado:", json_str, height=300)
-
-            # Botón para descargar el JSON generado
-            st.download_button(
-                label="Descargar JSON",
-                data=json_str,
-                file_name="documentos_procesados.json",
-                mime="application/json"
-            )
+            
         else:
             st.warning("No se extrajeron datos de los documentos.")
         
@@ -573,6 +562,18 @@ elif selected_option == "Comparación de Documentos":
         if json_data:
             st.write("Datos JSON extraídos de los documentos:")
             display_extracted_data(json_data)
+            # Mostrar el JSON completo
+            st.subheader("JSON completo generado:")
+            #json_str = json.dumps(json_data, indent=4)
+            #st.text_area("JSON Generado:", json_str, height=300)
+
+            # Botón para descargar el JSON generado
+            st.download_button(
+                label="Descargar JSON",
+                data=json_data,
+                file_name="documentos_procesados.json",
+                mime="application/json"
+            )
         else:
             st.warning("No se extrajeron datos de los documentos.")
             
