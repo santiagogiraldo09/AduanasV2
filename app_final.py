@@ -289,11 +289,15 @@ def display_extracted_data(json_data):
             if goods:
                 st.write("Detalles de los bienes:")
                 for good in goods[:6]:  # Mostrar solo los primeros 6 bienes
-                    st.write(f"- Descripción: {good.get('description', 'No disponible')}")
+                    st.write(f"- Producto: {good.get('line_item_number', 'No disponible')}")
+                    st.write(f"- Número de producto: {good.get('product_number', 'No disponible')}")
+                    st.write(f"  Descripción: {good.get('description', 'No disponible')}")
                     st.write(f"  Cantidad: {good.get('quantity', 'No disponible')}")
                     st.write(f"  Valor unitario: {good.get('unit_value', 'No disponible')}")
                     st.write(f"  Valor total: {good.get('total_value', 'No disponible')}")
-                    st.write(f"  Código arancelario: {good.get('harmonized_code', 'No disponible')}")
+                    #st.write(f"  Código arancelario: {good.get('harmonized_code', 'No disponible')}")
+                    st.write(f"  País de origen: {good.get('country_of_origin', 'No disponible')}")
+                    st.write(f"  Número de lote: {good.get('batch_number', 'No disponible')}")
                 if len(goods) > 6:
                     st.write(f"... y {len(goods) - 6} artículos más.")
 
