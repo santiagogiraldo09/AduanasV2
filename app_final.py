@@ -459,7 +459,7 @@ def get_json_template(document_type):
         return None
 
 # Interfaz de Streamlit con opciones de procesamiento
-st.title("Comparación de Documentos - Aduanasss!")
+st.title("Comparación de Documentos - Aduanas")
 
 # Usar Radio Buttons para opciones
 selected_option = st.radio(
