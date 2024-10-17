@@ -200,7 +200,7 @@ def parse_as_json(text, json_template):
             "For the 'goods' field, ensure that every item is represented, and include any relevant details such as product number, description, quantity, unit price, total price, country of origin, and batch number. "
             "When interpreting quantities and prices, be aware that a format such as '1.000' may represent one unit, and should not be confused with '1,000.0'. "
             "When you find values ​​in miles in the total value of an item you must be careful, many of these values ​​do not actually represent miles but hundreds, this is because there are companies that mix ',' and '.' without taking into account that they represent quantities such as 1.0 and not 1,000.0. For example the value '73,150.00', you must enter '73.150'"
-            "Additionally, make sure to extract the total file value and fill in the 'grand_total' field. Look for keywords like 'Total Amount', 'Grand Total', 'Invoice Total', or other similar terms that indicate the total value of the invoice. "
+            "Additionally, make sure to extract the total document value and fill in the 'grand_total' field. Look for keywords like 'Total Amount', 'Grand Total', 'Total Due', or other similar terms that indicate the total value of the document."
             #"Where you find this value '73,150.00' put '73.150'"
             "Use contextual information from the document to ensure quantities are accurately interpreted.\n"
             f"Here is the text to convert:\n{text}\n"
