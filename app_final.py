@@ -172,9 +172,10 @@ async def ocr_with_azure(file_stream, client):
         read_result = client.get_read_result(operation_id)
         if read_result.status not in ['notStarted', 'running']:
             break
-        await asyncio.sleep(10)
+        await asyncio.sleep(30)
 
     if read_result.status == OperationStatusCodes.succeeded:
+        st.write(f"Total de páginas procesadas: {len(read_result.analyze_result.read_results)}")
         extracted_text = ""
         for text_result in read_result.analyze_result.read_results:
             for line in text_result.lines:
