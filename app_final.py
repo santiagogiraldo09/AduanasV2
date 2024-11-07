@@ -6,8 +6,6 @@ from azure.cognitiveservices.vision.computervision.models import OperationStatus
 from msrest.authentication import CognitiveServicesCredentials
 from openai import AzureOpenAI
 import os
-import re
-from datetime import datetime
 
 # Configurar las credenciales de Azure
 AZURE_ENDPOINT = "https://iacdemoaduanas.cognitiveservices.azure.com/"  # Cambia por tu endpoint real
@@ -92,110 +90,6 @@ def parse_as_json(text, json_template):
     else:
         st.error("No se obtuvo una respuesta válida del modelo.")
         return None
-
-# Función para mostrar datos específicos del JSON
-def display_extracted_data(json_data):
-    """Función para mostrar datos extraídos del JSON."""
-    if not json_data:
-        st.error("No hay datos JSON para mostrar.")
-        return
-
-    st.subheader("Datos extraídos:")
-    # Inicializamos variables para evitar UnboundLocalError
-    invoice_reference_number = None
-    packing_list_invoice_number = None
-    invoice_date = None
-    packing_list_date = None
-    streetRUT = None
-    streetCC = None
-    
-    
-    for doc_name, doc_data in json_data.items():
-        st.write(f"Documento: {doc_name}")
-        
-        if "commercial_invoice" in doc_data:
-            # Mostrar datos de la empresa emisora de la factura
-            company = doc_data["commercial_invoice"].get("company", {})
-            st.write(f"Empresa emisora: {company.get('name', 'No disponible')}")
-            #st.write(f"Dirección de la empresa: {company.get('address', 'No disponible')}")
-            #st.write(f"Teléfono de la empresa: {company.get('phone', 'No disponible')}")
-            #st.write(f"Fax de la empresa: {company.get('fax', 'No disponible')}")
-
-            # Información del destinatario de la factura
-            invoice_to = doc_data["commercial_invoice"].get("invoice_to", {})
-            #st.write(f"Factura a nombre de: {invoice_to.get('name', 'No disponible')}")
-            addressInv = invoice_to.get("address","No disponible")
-            st.write(f"Dirección del destinatario: {invoice_to.get('address', 'No disponible')}")
-            #st.write(f"Teléfono del destinatario: {invoice_to.get('phone', 'No disponible')}")
-
-            # Detalles de la factura
-            invoice_details = doc_data["commercial_invoice"].get("invoice_details", {})
-            invoice_reference_number = invoice_details.get('reference_number', 'No disponible')
-            invoice_date = invoice_details.get('invoice_date', 'No disponible')
-            st.write(f"Número de referencia de la factura: {invoice_details.get('reference_number', 'No disponible')}")
-            st.write(f"Fecha de la factura: {invoice_details.get('invoice_date', 'No disponible')}")
-            #st.write(f"Número de Bill of Lading: {invoice_details.get('bill_of_lading_no', 'No disponible')}")
-            #st.write(f"Carrier: {invoice_details.get('carrier', 'No disponible')}")
-
-            # País de origen y destino
-            #st.write(f"País de exportación: {invoice_details.get('country_of_export', 'No disponible')}")
-            #st.write(f"País de origen de los bienes: {invoice_details.get('country_of_origin_of_goods', 'No disponible')}")
-            st.write(f"País de destino final: {invoice_details.get('country_of_ultimate_destination', 'No disponible')}")
-
-            # Detalles de los bienes
-            goods = doc_data["commercial_invoice"].get("goods", [])
-            if goods:
-                st.write("Detalles de los bienes:")
-                for good in goods[:6]:  # Mostrar solo los primeros 6 bienes
-                    st.write(f"- Producto: {good.get('line_item_number', 'No disponible')}")
-                    st.write(f"  Número de producto: {good.get('product_number', 'No disponible')}")
-                    st.write(f"  Descripción: {good.get('description', 'No disponible')}")
-                    st.write(f"  Cantidad: {good.get('quantity', 'No disponible')}")
-                    st.write(f"  Valor unitario: {good.get('unit_value', 'No disponible')}")
-                    st.write(f"  Valor total: {good.get('total_value', 'No disponible')}")
-                    #st.write(f"  Código arancelario: {good.get('harmonized_code', 'No disponible')}")
-                    st.write(f"  País de origen: {good.get('country_of_origin', 'No disponible')}")
-                    st.write(f"  Número de lote: {good.get('batch_number', 'No disponible')}")
-                if len(goods) > 6:
-                    st.write(f"... y {len(goods) - 6} artículos más.")
-
-            # Totales
-            totals = doc_data["commercial_invoice"].get("totals", {})
-            st.write(f"Gran total: {totals.get('grand_total', 'No disponible')}")
-            #st.write(f"Total de paquetes: {totals.get('total_number_of_packages', 'No disponible')}")
-            #st.write(f"Peso total: {totals.get('total_weight', 'No disponible')}")
-            
-        elif "packing_list" in doc_data:
-            exporter = doc_data["packing_list"].get("exporter", {})
-            st.write(f"Empresa exportadora: {exporter.get('name', 'No disponible')}")
-            st.write(f"Dirección entrega: {exporter.get('address', 'No disponible')}")
-            # Información del comprador
-            #buyer = doc_data["packing_list"].get("buyer", {})
-            #st.write(f"Comprador: {buyer.get('name', 'No disponible')}")
-            #st.write(f"Dirección: {buyer.get('address', 'No disponible')}")
-            invoice_details = doc_data["packing_list"].get("invoice_details", {})
-            packing_list_invoice_number = invoice_details.get('export_invoice_number', 'No disponible')
-            packing_list_date = invoice_details.get('date', 'No disponible')
-            st.write(f"Número de factura relacionada: {invoice_details.get('export_invoice_number', 'No disponible')}")
-            st.write(f"Fecha: {invoice_details.get('date', 'No disponible')}")
-            #
-            shipment_details = doc_data["packing_list"].get("shipment_details", {})
-            #st.write(f"Ciudad de destino: {shipment_details.get('country_of_final_destination', 'No disponible')}")
-             
-            
-    #comparación de números de factura y fecha
-    if invoice_reference_number and packing_list_invoice_number and invoice_date and packing_list_date:
-        resultado_comparacion_fechas = comparar_fechas(invoice_date, packing_list_date)
-        st.write(resultado_comparacion_fechas)  # Mostrar resultado de la comparación de fechas
-    
-        if invoice_reference_number == packing_list_invoice_number and "coinciden" in resultado_comparacion_fechas:
-                st.success("Todos los campos coinciden")
-        elif invoice_reference_number == packing_list_invoice_number and "no coinciden" in resultado_comparacion_fechas:
-            st.success(f"La fecha '{invoice_date}' **no coincide** con la fecha en la lista de empaque '{packing_list_date}'.")
-        elif invoice_reference_number != packing_list_invoice_number and "coinciden" in resultado_comparacion_fechas:
-            st.success(f"El número de factura '{invoice_reference_number}' **no coincide** con el número en la lista de empaque '{packing_list_invoice_number}'")
-        else:
-            st.error("Ninguno de los campos coincide")
     
 # Función para procesar los documentos (OCR y conversión a JSON)
 def process_document(uploaded_file, document_type, json_data):
@@ -220,6 +114,36 @@ def process_document(uploaded_file, document_type, json_data):
                 if parsed_json: 
                     json_data[uploaded_file.name] = parsed_json
 
+
+def compare_fields_with_openai(fields_invoice, fields_packing_list):
+    messages = [
+        {"role": "system", "content": "You are an expert in data validation and comparison."},
+        {"role": "user", "content": (
+            "Compare the following fields from two documents and determine if they match in meaning:\n\n"
+            f"Invoice Number of Invoice: {fields_invoice['invoice_number']}\n"
+            f"Packing List Invoice Number: {fields_packing_list['invoice_number']}\n\n"
+            f"Invoice Address: {fields_invoice['address']}\n"
+            f"Packing List Address: {fields_packing_list['address']}\n\n"
+            f"Invoice Date: {fields_invoice['date']}\n"
+            f"Packing List Date: {fields_packing_list['date']}\n\n"
+            "For address and date fields, consider similarity in meaning rather than an exact textual match. "
+            "Indicates for each field whether they match or not, and provides a brief explanation if they do not match."
+        )}
+    ]
+
+    response = openai_client.chat_completions.create(
+        engine="Aduanas",  # Asegúrate de que este es el modelo correcto
+        messages=messages,
+        max_tokens=500,
+        temperature=0
+    )
+
+    if response.choices:
+        comparison_result = response.choices[0].message.content.strip()
+        return comparison_result
+    else:
+        st.error("No se obtuvo una respuesta válida del modelo.")
+        return None
 
 # Cargar la plantilla adecuada según el tipo de documento
 def get_json_template(document_type):
@@ -270,6 +194,26 @@ if st.button("Iniciar procesamiento de OCR"):
 
     # Mostrar los resultados de los documentos procesados
     if json_data:
+        
+        # Extraer campos relevantes de la factura
+        fields_invoice = {
+            'invoice_number': json_data.get(uploaded_invoice.name, {}).get('invoice_number', ''),
+            'address': json_data.get(uploaded_invoice.name, {}).get('address', ''),
+            'date': json_data.get(uploaded_invoice.name, {}).get('date', '')
+        }
+        # Extraer campos relevantes de la lista de empaque
+        fields_packing_list = {
+            'invoice_number': json_data.get(uploaded_packing_list.name, {}).get('invoice_number', ''),
+            'address': json_data.get(uploaded_packing_list.name, {}).get('address', ''),
+            'date': json_data.get(uploaded_packing_list.name, {}).get('date', '')
+        }
+    
+        # Realizar la comparación
+        comparison_result = compare_fields_with_openai(fields_invoice, fields_packing_list)
+        if comparison_result:
+            st.subheader("Resultado de la comparación:")
+            st.write(comparison_result)
+        
         # Mostrar el JSON completo
         st.subheader("JSON completo generado:")
         json_str = json.dumps(json_data, indent=4)
