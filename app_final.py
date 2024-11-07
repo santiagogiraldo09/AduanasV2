@@ -117,7 +117,7 @@ def process_document(uploaded_file, document_type, json_data):
 
 def compare_fields_with_openai(fields_invoice, fields_packing_list):
     messages = [
-        {"role": "system", "content": "You are an expert in data validation and comparison."},
+        {"role": "system", "content": "You are an expert in data formatting and validation."},
         {"role": "user", "content": (
             "Compare the following fields from two documents and determine if they match in meaning:\n\n"
             f"Invoice Number of Invoice: {fields_invoice['invoice_number']}\n"
@@ -134,7 +134,7 @@ def compare_fields_with_openai(fields_invoice, fields_packing_list):
     response = openai_client.chat_completions.create(
         engine="Aduanas",  # Asegúrate de que este es el modelo correcto
         messages=messages,
-        max_tokens=500,
+        max_tokens=1000,
         temperature=0
     )
 
