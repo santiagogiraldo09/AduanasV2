@@ -25,54 +25,6 @@ openai_client = AzureOpenAI(
     api_version="2024-02-01"
 )
 
-# Función para normalizar la dirección
-#def clean_and_normalize_address(address):
-    #address = re.sub(r'\b(OFICINA|OF|Ofi|OFI|APT|APARTAMENTO|PISO|DEPTO|INTERIOR)\b\s*\d*', '', address, flags=re.IGNORECASE)
-    #address = re.sub(r'\b(CRA|CRR|CR|CARR)\b', 'Carrera', address, flags=re.IGNORECASE)
-    #address = re.sub(r'\b(CLL|CL|CALLE)\b', 'Calle', address, flags=re.IGNORECASE)
-    #address = re.sub(r'\b(DG|DIAG|DIAGONAL)\b', 'Diagonal', address, flags=re.IGNORECASE)
-    #return address.strip()
-
-def normalizar_fecha(fecha_str):
-    """
-    Esta función recibe una fecha en formato de string y la convierte en un objeto datetime.
-    Detecta diferentes formatos de fecha como "día/mes/año", "día-mes-año", y "día.mes.año".
-    """
-    formatos_fecha = [
-        r"(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})",  # Formato genérico (día/mes/año o día-mes-año o día.mes.año) 
-    ]
-    # Intentamos buscar un formato de fecha que coincida
-    for formato in formatos_fecha:
-        match = re.match(formato, fecha_str)
-        if match:
-            dia, mes, año = match.groups()
-
-            # Si el año está en formato corto (por ejemplo, '21'), lo expandimos a '2021'
-            if len(año) == 2:
-                año = "20" + año if int(año) < 50 else "19" + año  # Se ajusta según el siglo más probable
-
-            # Convertimos a objeto datetime
-            try:
-                return datetime(int(año), int(mes), int(dia))
-            except ValueError:
-                return None
-
-    # Si no se pudo interpretar la fecha
-    return None
-
-# Función para comparar fechas
-def comparar_fechas(fecha_factura, fecha_empaque):
-    fecha_normalizada_factura = normalizar_fecha(fecha_factura)
-    fecha_normalizada_empaque = normalizar_fecha(fecha_empaque)
-
-    if fecha_normalizada_factura and fecha_normalizada_empaque:
-        if fecha_normalizada_factura == fecha_normalizada_empaque:
-            return "Las fechas coinciden."
-        else:
-            return f"Las fechas NO coinciden: Factura ({fecha_factura}) vs. Empaque ({fecha_empaque})"
-    else:
-        return "Una o ambas fechas son inválidas."
-
 # Función para extraer texto de PDF usando OCR de Azure
 async def ocr_with_azure(file_stream, client):
     """Extraer texto de un PDF usando Azure OCR."""
