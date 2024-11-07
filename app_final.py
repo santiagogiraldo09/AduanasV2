@@ -4,29 +4,162 @@ import json
 from azure.cognitiveservices.vision.computervision import ComputerVisionClient
 from azure.cognitiveservices.vision.computervision.models import OperationStatusCodes
 from msrest.authentication import CognitiveServicesCredentials
-import openai
+from openai import AzureOpenAI
 import os
+import requests
+import math
+import re
+from geopy.distance import geodesic
+from io import BytesIO
+from PIL import Image
+from datetime import datetime
 
 # Configurar las credenciales de Azure
 AZURE_ENDPOINT = "https://iacdemoaduanas.cognitiveservices.azure.com/"  # Cambia por tu endpoint real
 AZURE_KEY = "e44dceb20f40469291dd107c2689e556"  # Cambia por tu API Key real
-AZURE_OPENAI_ENDPOINT = "https://iac-demo-aduanas.openai.azure.com"  # Coloca tu endpoint de Azure OpenAI
+AZURE_OPENAI_ENDPOINT = "https://iac-demo-aduanas.openai.azure.com/"  # Coloca tu endpoint de Azure OpenAI
 AZURE_OPENAI_KEY = "e68adbe619e241f7bb9c9d25389743d2"  # Coloca tu clave de Azure OpenAI
+# URL de la API de Static Maps
+STATIC_MAP_URL = "https://maps.googleapis.com/maps/api/staticmap"
+PLACES_API_URL = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+
+#Configurar credenciales Google Geocoding
+GOOGLE_API_KEY = "AIzaSyAup1kQpy0W1gyaWOY2IoUl9VAHP_7pxYI"
+# URL de la API de Geocoding
+GEOCODING_URL = "https://maps.googleapis.com/maps/api/geocode/json"
 
 # Configurar cliente de Azure Computer Vision
 cv_client = ComputerVisionClient(AZURE_ENDPOINT, CognitiveServicesCredentials(AZURE_KEY))
 
 # Configurar cliente de Azure OpenAI
-#openai_client = AzureOpenAI(
-    #azure_endpoint=AZURE_OPENAI_ENDPOINT,
-    #api_key=AZURE_OPENAI_KEY,
-    #api_version="2024-02-01"
-#)
+openai_client = AzureOpenAI(
+    azure_endpoint=AZURE_OPENAI_ENDPOINT,
+    api_key=AZURE_OPENAI_KEY,
+    api_version="2024-02-01"
+)
 
-openai.api_type = "azure"
-openai.api_base = AZURE_OPENAI_ENDPOINT
-openai.api_version = "2023-03-15-preview"  # Asegúrate de usar la versión correcta
-openai.api_key = AZURE_OPENAI_KEY
+# Función para normalizar la dirección
+def clean_and_normalize_address(address):
+    address = re.sub(r'\b(OFICINA|OF|Ofi|OFI|APT|APARTAMENTO|PISO|DEPTO|INTERIOR)\b\s*\d*', '', address, flags=re.IGNORECASE)
+    address = re.sub(r'\b(CRA|CRR|CR|CARR)\b', 'Carrera', address, flags=re.IGNORECASE)
+    address = re.sub(r'\b(CLL|CL|CALLE)\b', 'Calle', address, flags=re.IGNORECASE)
+    address = re.sub(r'\b(DG|DIAG|DIAGONAL)\b', 'Diagonal', address, flags=re.IGNORECASE)
+    return address.strip()
+
+def normalizar_fecha(fecha_str):
+    """
+    Esta función recibe una fecha en formato de string y la convierte en un objeto datetime.
+    Detecta diferentes formatos de fecha como "día/mes/año", "día-mes-año", y "día.mes.año".
+    """
+    formatos_fecha = [
+        r"(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})",  # Formato genérico (día/mes/año o día-mes-año o día.mes.año) 
+    ]
+    # Intentamos buscar un formato de fecha que coincida
+    for formato in formatos_fecha:
+        match = re.match(formato, fecha_str)
+        if match:
+            dia, mes, año = match.groups()
+
+            # Si el año está en formato corto (por ejemplo, '21'), lo expandimos a '2021'
+            if len(año) == 2:
+                año = "20" + año if int(año) < 50 else "19" + año  # Se ajusta según el siglo más probable
+
+            # Convertimos a objeto datetime
+            try:
+                return datetime(int(año), int(mes), int(dia))
+            except ValueError:
+                return None
+
+    # Si no se pudo interpretar la fecha
+    return None
+
+# Función para comparar fechas
+def comparar_fechas(fecha_factura, fecha_empaque):
+    fecha_normalizada_factura = normalizar_fecha(fecha_factura)
+    fecha_normalizada_empaque = normalizar_fecha(fecha_empaque)
+
+    if fecha_normalizada_factura and fecha_normalizada_empaque:
+        if fecha_normalizada_factura == fecha_normalizada_empaque:
+            return "Las fechas coinciden."
+        else:
+            return f"Las fechas NO coinciden: Factura ({fecha_factura}) vs. Empaque ({fecha_empaque})"
+    else:
+        return "Una o ambas fechas son inválidas."
+
+def obtener_imagen_mapa(latitud, longitud):
+    params = {
+        'center': f"{latitud},{longitud}",
+        'zoom': 17,
+        'size': "600x300",
+        'markers': f"color:red|label:A|{latitud},{longitud}",
+        'maptype': 'satellite',
+        'key': GOOGLE_API_KEY
+    }
+    respuesta = requests.get(STATIC_MAP_URL, params=params)
+    return Image.open(BytesIO(respuesta.content))
+
+# Función para obtener lugares cercanos con Google Places
+def obtener_lugares_cercanos(latitud, longitud, tipo, radio=50):
+    params = {
+        'location': f"{latitud},{longitud}",
+        'radius': radio,  # Radio de búsqueda en metros
+        'type': tipo,
+        'key': GOOGLE_API_KEY
+    }
+    respuesta = requests.get(PLACES_API_URL, params=params)
+    if respuesta.status_code == 200:
+        datos = respuesta.json()
+        return datos.get('results', [])
+    return []
+
+# Función para categorizar la zona
+def categorizar_zona(latitud, longitud):
+    tipos = {
+        "residencial": "neighborhood",
+        "portuaria": "point_of_interest|establishment",
+        "bodegas": "storage"
+    }
+    radio_busqueda = 201  # Radio en metros
+    lugares_residenciales = obtener_lugares_cercanos(latitud, longitud, tipos['residencial'], radio_busqueda)
+    lugares_portuarios = obtener_lugares_cercanos(latitud, longitud, tipos['portuaria'], radio_busqueda)
+    lugares_bodegas = obtener_lugares_cercanos(latitud, longitud, tipos['bodegas'], radio_busqueda)
+
+    if lugares_residenciales:
+        return "Zona residencial"
+    elif lugares_portuarios:
+        return "Zona portuaria"
+    elif lugares_bodegas:
+        return "Zona de bodegas"
+    else:
+        return "Zona desconocida"
+
+def obtener_coordenadas(address):
+    """Obtener las coordenadas de una dirección utilizando la API de Google Geocoding."""
+    params = {
+        'address': address,
+        'key': GOOGLE_API_KEY
+    }
+    respuesta = requests.get(GEOCODING_URL, params=params)
+    
+    if respuesta.status_code == 200:
+        datos = respuesta.json()
+        if datos['status'] == 'OK':
+            ubicacion = datos['results'][0]['geometry']['location']
+            return ubicacion['lat'], ubicacion['lng']
+        else:
+            st.error(f"No se pudo obtener la ubicación de la dirección: {address}")
+            return None, None
+    else:
+        st.error("Error al conectarse a la API de Google Geocoding")
+        return None, None
+    
+# Función para comparar coordenadas con un umbral de distancia
+def comparar_coordenadas(coord1, coord2, umbral_metros=50):
+    if None in coord1 or None in coord2:
+        return False
+    distancia = geodesic(coord1, coord2).meters
+    st.write(f"Distancia calculada entre coordenadas: {distancia} metros")  # Mostrar la distancia calculada
+    return distancia <= umbral_metros
 
 # Función para extraer texto de PDF usando OCR de Azure
 async def ocr_with_azure(file_stream, client):
@@ -77,8 +210,8 @@ def parse_as_json(text, json_template):
         )}
     ]
 
-    response = openai.ChatCompletion.create(
-        deployment_id="Aduanas",
+    response = openai_client.chat.completions.create(
+        model="Aduanas",
         messages=messages,
         max_tokens=4096,
         temperature=0
@@ -95,6 +228,186 @@ def parse_as_json(text, json_template):
     else:
         st.error("No se obtuvo una respuesta válida del modelo.")
         return None
+
+# Función para mostrar datos específicos del JSON
+def display_extracted_data(json_data):
+    """Función para mostrar datos extraídos del JSON."""
+    if not json_data:
+        st.error("No hay datos JSON para mostrar.")
+        return
+
+    st.subheader("Datos extraídos:")
+    # Inicializamos variables para evitar UnboundLocalError
+    invoice_reference_number = None
+    packing_list_invoice_number = None
+    invoice_date = None
+    packing_list_date = None
+    streetRUT = None
+    streetCC = None
+    
+    
+    for doc_name, doc_data in json_data.items():
+        st.write(f"Documento: {doc_name}")
+        
+        if "bill_of_lading_number" in doc_data:
+            st.write(f"Número de B/L: {doc_data.get('bill_of_lading_number', 'No disponible')}")
+
+            consignee = doc_data.get('consignee', {})
+            st.write(f"Consignatario: {consignee.get('name', 'No disponible')}")
+
+            transport_details = doc_data.get('transport_details', {})
+            st.write(f"Puerto de Carga: {transport_details.get('port_of_loading', 'No disponible')}")
+            st.write(f"Puerto de Descarga: {transport_details.get('port_of_discharge', 'No disponible')}")
+            
+            vessel = doc_data.get('vessel', {})
+            st.write(f"Nombre del Buque: {vessel.get('name', 'No disponible')}")
+            st.write(f"Número de Viaje: {vessel.get('voyage_number', 'No disponible')}")
+        
+        elif "commercial_invoice" in doc_data:
+            # Mostrar datos de la empresa emisora de la factura
+            company = doc_data["commercial_invoice"].get("company", {})
+            st.write(f"Empresa emisora: {company.get('name', 'No disponible')}")
+            #st.write(f"Dirección de la empresa: {company.get('address', 'No disponible')}")
+            #st.write(f"Teléfono de la empresa: {company.get('phone', 'No disponible')}")
+            #st.write(f"Fax de la empresa: {company.get('fax', 'No disponible')}")
+
+            # Información del destinatario de la factura
+            invoice_to = doc_data["commercial_invoice"].get("invoice_to", {})
+            #st.write(f"Factura a nombre de: {invoice_to.get('name', 'No disponible')}")
+            addressInv = invoice_to.get("address","No disponible")
+            st.write(f"Dirección del destinatario: {invoice_to.get('address', 'No disponible')}")
+            #st.write(f"Teléfono del destinatario: {invoice_to.get('phone', 'No disponible')}")
+
+            # Detalles de la factura
+            invoice_details = doc_data["commercial_invoice"].get("invoice_details", {})
+            invoice_reference_number = invoice_details.get('reference_number', 'No disponible')
+            invoice_date = invoice_details.get('invoice_date', 'No disponible')
+            st.write(f"Número de referencia de la factura: {invoice_details.get('reference_number', 'No disponible')}")
+            st.write(f"Fecha de la factura: {invoice_details.get('invoice_date', 'No disponible')}")
+            #st.write(f"Número de Bill of Lading: {invoice_details.get('bill_of_lading_no', 'No disponible')}")
+            #st.write(f"Carrier: {invoice_details.get('carrier', 'No disponible')}")
+
+            # País de origen y destino
+            #st.write(f"País de exportación: {invoice_details.get('country_of_export', 'No disponible')}")
+            #st.write(f"País de origen de los bienes: {invoice_details.get('country_of_origin_of_goods', 'No disponible')}")
+            st.write(f"País de destino final: {invoice_details.get('country_of_ultimate_destination', 'No disponible')}")
+
+            # Detalles de los bienes
+            goods = doc_data["commercial_invoice"].get("goods", [])
+            if goods:
+                st.write("Detalles de los bienes:")
+                for good in goods[:6]:  # Mostrar solo los primeros 6 bienes
+                    st.write(f"- Producto: {good.get('line_item_number', 'No disponible')}")
+                    st.write(f"  Número de producto: {good.get('product_number', 'No disponible')}")
+                    st.write(f"  Descripción: {good.get('description', 'No disponible')}")
+                    st.write(f"  Cantidad: {good.get('quantity', 'No disponible')}")
+                    st.write(f"  Valor unitario: {good.get('unit_value', 'No disponible')}")
+                    st.write(f"  Valor total: {good.get('total_value', 'No disponible')}")
+                    #st.write(f"  Código arancelario: {good.get('harmonized_code', 'No disponible')}")
+                    st.write(f"  País de origen: {good.get('country_of_origin', 'No disponible')}")
+                    st.write(f"  Número de lote: {good.get('batch_number', 'No disponible')}")
+                if len(goods) > 6:
+                    st.write(f"... y {len(goods) - 6} artículos más.")
+
+            # Totales
+            totals = doc_data["commercial_invoice"].get("totals", {})
+            st.write(f"Gran total: {totals.get('grand_total', 'No disponible')}")
+            #st.write(f"Total de paquetes: {totals.get('total_number_of_packages', 'No disponible')}")
+            #st.write(f"Peso total: {totals.get('total_weight', 'No disponible')}")
+            
+        elif "packing_list" in doc_data:
+            exporter = doc_data["packing_list"].get("exporter", {})
+            st.write(f"Empresa exportadora: {exporter.get('name', 'No disponible')}")
+            st.write(f"Dirección entrega: {exporter.get('address', 'No disponible')}")
+            # Información del comprador
+            #buyer = doc_data["packing_list"].get("buyer", {})
+            #st.write(f"Comprador: {buyer.get('name', 'No disponible')}")
+            #st.write(f"Dirección: {buyer.get('address', 'No disponible')}")
+            invoice_details = doc_data["packing_list"].get("invoice_details", {})
+            packing_list_invoice_number = invoice_details.get('export_invoice_number', 'No disponible')
+            packing_list_date = invoice_details.get('date', 'No disponible')
+            st.write(f"Número de factura relacionada: {invoice_details.get('export_invoice_number', 'No disponible')}")
+            st.write(f"Fecha: {invoice_details.get('date', 'No disponible')}")
+            #
+            shipment_details = doc_data["packing_list"].get("shipment_details", {})
+            #st.write(f"Ciudad de destino: {shipment_details.get('country_of_final_destination', 'No disponible')}")
+            
+        elif "RUT" in doc_data:
+           NIT = doc_data["RUT"].get("NIT", {})
+           st.write(f"Número de NIT: {NIT.get('number', 'No disponible')}")
+           address = doc_data["RUT"].get("address", {})
+           primary_address = address.get("primary", {})
+           streetRUT = primary_address.get("street", "No disponible")
+           st.write(f"Dirección RUT: {streetRUT}") 
+           
+        elif "Camara_de_Comercio" in doc_data:
+            company_name = doc_data.get("Camara_de_Comercio", {}).get("company_name", "No disónible")
+            # Acceder a la dirección (street) dentro de "Camara_de_Comercio" -> "address"
+            address = doc_data.get("Camara_de_Comercio", {}).get("address", {})
+            streetCC = address.get("street", "No disponible")
+            
+            # Mostrar los valores
+            st.write(f"Nombre de la empresa: {company_name}")
+            st.write(f"Dirección Cámara de Comercio: {streetCC}")            
+       
+            
+    #Si las direcciones de la factura y lista de empaque existen, proceder con la geocodificación y comparación
+    #-------------------Está por hacerse-----------------------#
+    ##if addressInv and streetLista_Empaque:
+        # Normalizar direcciones
+        ##direccion_Inv_normalizada = clean_and_normalize_address(addressInv)
+        ##direccion_ListaEmpaque_normalizada = clean_and_normalize_address(streetLista_empaque)
+        #Obtener coordenadas
+        ##coordenadas_Invoice = obtener_coordenadas(direccion_Inv_normalizada)
+        ##coordenadas_ListaEmpaque = obtener_coordenadas(direccion_ListaEmpaque_normalizada)
+        #Mostrar coordenadas en pantalla
+        ##st.write(f"Coordenadas de la dirección de factura: {coordenadas_Invoice}")
+        ##st.write(f"Coordenadas de la dirección RUT: {coordenadas_ListaEmpaque}")
+        ##if coordenadas_Invoice and coordenadas_ListaEmpaque:
+            ##if comparar_coordenadas(coordenadas_Invoice, coordenadas_ListaEmpaque, umbral_metros=50):
+                ##st.success("Las direcciones están dentro del margen de 50 metros.")
+            ##else:
+                ##st.error("Las direcciones están a más de 50 metros de distancia.")
+        ##else:
+            ##st.error("No se pudo obtener las coordenadas de una o ambas direcciones.")
+        
+    #Si las direcciones de BL y "", proceder con la geocodificación y comparación
+            
+    #comparación de números de factura y fecha
+    if invoice_reference_number and packing_list_invoice_number and invoice_date and packing_list_date:
+        resultado_comparacion_fechas = comparar_fechas(invoice_date, packing_list_date)
+        st.write(resultado_comparacion_fechas)  # Mostrar resultado de la comparación de fechas
+    
+        if invoice_reference_number == packing_list_invoice_number and "coinciden" in resultado_comparacion_fechas:
+                st.success("Todos los campos coinciden")
+        elif invoice_reference_number == packing_list_invoice_number and "no coinciden" in resultado_comparacion_fechas:
+            st.success(f"La fecha '{invoice_date}' **no coincide** con la fecha en la lista de empaque '{packing_list_date}'.")
+        elif invoice_reference_number != packing_list_invoice_number and "coinciden" in resultado_comparacion_fechas:
+            st.success(f"El número de factura '{invoice_reference_number}' **no coincide** con el número en la lista de empaque '{packing_list_invoice_number}'")
+        else:
+            st.error("Ninguno de los campos coincide")
+    
+    # Si ambas direcciones existen, proceder con la geocodificación y comparación
+    if streetRUT and streetCC:
+        # Normalizar direcciones
+        direccion_rut_normalizada = clean_and_normalize_address(streetRUT)
+        direccion_cc_normalizada = clean_and_normalize_address(streetCC)
+        #Obtener coordenadas
+        coordenadas_rut = obtener_coordenadas(direccion_rut_normalizada)
+        coordenadas_cc = obtener_coordenadas(direccion_cc_normalizada)
+        #Mostrar coordenadas en pantalla
+        st.write(f"Coordenadas de la dirección RUT: {coordenadas_rut}")
+        st.write(f"Coordenadas de la dirección relacionada con la Cámara de Comercio: {coordenadas_cc}")
+        if coordenadas_rut and coordenadas_cc:
+            if comparar_coordenadas(coordenadas_rut, coordenadas_cc, umbral_metros=50):
+                st.success("Las direcciones están dentro del margen establecido.")
+            else:
+                st.error("Las direcciones están a más de 50 metros de distancia.")
+        else:
+            st.error("No se pudo obtener las coordenadas de una o ambas direcciones.")
+            
+        #Almacenar la dirección normalizada
+        st.session_state.direccion_rut_normalizada = direccion_rut_normalizada
     
 # Función para procesar los documentos (OCR y conversión a JSON)
 def process_document(uploaded_file, document_type, json_data):
@@ -110,7 +423,7 @@ def process_document(uploaded_file, document_type, json_data):
 
         if extracted_text:
             #st.write(f"Texto extraído de {uploaded_file.name}:")
-            #st.text(extracted_text)
+            st.text(extracted_text)
 
             # Cargar la plantilla adecuada
             json_template = get_json_template(document_type)
@@ -119,36 +432,6 @@ def process_document(uploaded_file, document_type, json_data):
                 if parsed_json: 
                     json_data[uploaded_file.name] = parsed_json
 
-
-def compare_fields_with_openai(fields_invoice, fields_packing_list):
-    messages = [
-        {"role": "system", "content": "You are an expert in data formatting and validation."},
-        {"role": "user", "content": (
-            "Compare the following fields from two documents and determine if they match in meaning:\n\n"
-            f"Invoice Number of Invoice: {fields_invoice['invoice_number']}\n"
-            f"Packing List Invoice Number: {fields_packing_list['invoice_number']}\n\n"
-            f"Invoice Address: {fields_invoice['address']}\n"
-            f"Packing List Address: {fields_packing_list['address']}\n\n"
-            f"Invoice Date: {fields_invoice['date']}\n"
-            f"Packing List Date: {fields_packing_list['date']}\n\n"
-            "For address and date fields, consider similarity in meaning rather than an exact textual match. "
-            "Indicates for each field whether they match or not, and provides a brief explanation if they do not match."
-        )}
-    ]
-
-    response = openai.ChatCompletion.create(
-        deployment_id="Aduanas",  # Asegúrate de que este es el modelo correcto
-        messages=messages,
-        max_tokens=1000,
-        temperature=0
-    )
-
-    if response.choices:
-        comparison_result = response.choices[0].message.content.strip()
-        return comparison_result
-    else:
-        st.error("No se obtuvo una respuesta válida del modelo.")
-        return None
 
 # Cargar la plantilla adecuada según el tipo de documento
 def get_json_template(document_type):
@@ -181,6 +464,14 @@ def get_json_template(document_type):
 # Interfaz de Streamlit con opciones de procesamiento
 st.title("Comparación de Documentos - Aduanas")
 
+# Carga de Bill of Lading
+st.header("Cargar Bill of Lading")
+uploaded_bl = st.file_uploader("Sube tu archivo de Bill of Lading (PDF)", type=["pdf"], key="bl")
+
+# Carga de Certificado de Origen
+st.header("Cargar Certificado de Origen")
+uploaded_co = st.file_uploader("Sube tu archivo de Certificado de Origen (PDF)", type=["pdf"], key="co")
+
 # Carga de Factura (Commercial Invoice)
 st.header("Cargar Factura")
 uploaded_invoice = st.file_uploader("Sube tu archivo de Factura (PDF)", type=["pdf"], key="invoice")
@@ -194,31 +485,15 @@ if st.button("Iniciar procesamiento de OCR"):
     json_data = {}
 
     # Procesar cada archivo si fue subido
+    process_document(uploaded_bl, "Bill of Lading", json_data)
+    process_document(uploaded_co, "Certificado de Origen", json_data)
     process_document(uploaded_invoice, "Factura", json_data)
     process_document(uploaded_packing_list, "Lista de Empaque", json_data)
 
     # Mostrar los resultados de los documentos procesados
     if json_data:
-        
-        # Extraer campos relevantes de la factura
-        fields_invoice = {
-            'invoice_number': json_data.get(uploaded_invoice.name, {}).get('invoice_number', ''),
-            'address': json_data.get(uploaded_invoice.name, {}).get('address', ''),
-            'date': json_data.get(uploaded_invoice.name, {}).get('date', '')
-        }
-        # Extraer campos relevantes de la lista de empaque
-        fields_packing_list = {
-            'invoice_number': json_data.get(uploaded_packing_list.name, {}).get('invoice_number', ''),
-            'address': json_data.get(uploaded_packing_list.name, {}).get('address', ''),
-            'date': json_data.get(uploaded_packing_list.name, {}).get('date', '')
-        }
-    
-        # Realizar la comparación
-        comparison_result = compare_fields_with_openai(fields_invoice, fields_packing_list)
-        if comparison_result:
-            st.subheader("Resultado de la comparación:")
-            st.write(comparison_result)
-        
+        st.write("Datos JSON extraídos de los documentos:")
+        display_extracted_data(json_data)
         # Mostrar el JSON completo
         st.subheader("JSON completo generado:")
         json_str = json.dumps(json_data, indent=4)
