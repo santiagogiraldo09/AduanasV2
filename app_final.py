@@ -465,121 +465,121 @@ def get_json_template(document_type):
 st.title("Comparación de Documentos - Aduanas")
 
 # Usar Radio Buttons para opciones
-selected_option = st.radio(
-    "Selecciona una opción:",
-    ("Comparación y categorización de direcciones", "Comparación de Documentos")
-)
+#selected_option = st.radio(
+    #"Selecciona una opción:",
+    #("Comparación y categorización de direcciones", "Comparación de Documentos")
+#)
 
 # Si se selecciona "Comparación de Documentos", mostrar campos para cargar documentos
-if selected_option == "Comparación y categorización de direcciones":
+#if selected_option == "Comparación y categorización de direcciones":
     #Carga de RUT
-    st.header("Cargar RUT")
-    uploaded_rut = st.file_uploader("Sube tu archivo de RUT (PDF)", type=["pdf"], key="rut")
+    #st.header("Cargar RUT")
+    #uploaded_rut = st.file_uploader("Sube tu archivo de RUT (PDF)", type=["pdf"], key="rut")
     
     # Carga de Cámara de Comercio
-    st.header("Cargar Cámara de Comercio")
-    uploaded_cc = st.file_uploader("Sube tu archivo de Cámara de comercio (PDF)", type=["pdf"], key="cc")
+    #st.header("Cargar Cámara de Comercio")
+    #uploaded_cc = st.file_uploader("Sube tu archivo de Cámara de comercio (PDF)", type=["pdf"], key="cc")
     
     # Carga de Cotización
     #st.header("Cargar Cotización")
     #uploaded_cot = st.file_uploader("Sube tu archivo de Cotización (PDF)", type=["pdf"], key="cot")
     
     # Botón para iniciar la extracción y procesamiento de OCR
-    if st.button("Iniciar Comparación"):
-        json_data = {}
+    #if st.button("Iniciar Comparación"):
+        #json_data = {}
         
         # Procesar el archivo RUT si fue subido
-        if uploaded_rut:
-            process_document(uploaded_rut, "RUT", json_data)
+        #if uploaded_rut:
+            #process_document(uploaded_rut, "RUT", json_data)
         
         # Procesar el archivo de Cámara de Comercio si fue subido
-        if uploaded_cc:
-            process_document(uploaded_cc, "Cámara de Comercio", json_data)
+        #if uploaded_cc:
+            #process_document(uploaded_cc, "Cámara de Comercio", json_data)
         
         # Procesar el archivo de Cotización si fue subido
         #if uploaded_cot:
             #process_document(uploaded_cot, "Cotización", json_data)
         
         # Mostrar los resultados de los documentos procesados
-        if json_data:
-            st.write("Datos JSON extraídos de los documentos:")
-            display_extracted_data(json_data)
+        #if json_data:
+            #st.write("Datos JSON extraídos de los documentos:")
+            #display_extracted_data(json_data)
             
             
-        else:
-            st.warning("No se extrajeron datos de los documentos.")
+        #else:
+            #st.warning("No se extrajeron datos de los documentos.")
         
     #Si las direcciones ya han sido extraidas y guardadas en session_state
-    if "direccion_rut_normalizada" in st.session_state:
-        st.subheader("Categorizar Dirección")
+    #if "direccion_rut_normalizada" in st.session_state:
+        #st.subheader("Categorizar Dirección")
         
         # Mostrar la dirección extraída y permitir editarla
-        direccion_editada = st.text_input("Edita la dirección para categorizar", value=st.session_state.direccion_rut_normalizada)
+        #direccion_editada = st.text_input("Edita la dirección para categorizar", value=st.session_state.direccion_rut_normalizada)
     
         # Botón para confirmar la categorización
-        if st.button("Categorizar Dirección"):
-            direccion_editada_normalizada = clean_and_normalize_address(direccion_editada)
+        #if st.button("Categorizar Dirección"):
+            #direccion_editada_normalizada = clean_and_normalize_address(direccion_editada)
     
             # Obtener coordenadas
-            lat_rut, lng_rut = obtener_coordenadas(direccion_editada_normalizada)
-            if lat_rut and lng_rut:
-                st.write(f"Coordenadas: {lat_rut}, {lng_rut}")
+            #lat_rut, lng_rut = obtener_coordenadas(direccion_editada_normalizada)
+            #if lat_rut and lng_rut:
+                #st.write(f"Coordenadas: {lat_rut}, {lng_rut}")
     
                 # Obtener imagen del mapa
-                imagen_mapa = obtener_imagen_mapa(lat_rut, lng_rut)
-                st.image(imagen_mapa, caption="Vista de la ubicación RUT", use_column_width=True)
+                #imagen_mapa = obtener_imagen_mapa(lat_rut, lng_rut)
+                #st.image(imagen_mapa, caption="Vista de la ubicación RUT", use_column_width=True)
     
                 # Categorizar la zona
-                categoria = categorizar_zona(lat_rut, lng_rut)
-                st.write(f"Categoría de la zona: {categoria}")
-            else:
-                st.error("No se pudieron obtener las coordenadas de la dirección.")
+                #categoria = categorizar_zona(lat_rut, lng_rut)
+                #st.write(f"Categoría de la zona: {categoria}")
+            #else:
+                #st.error("No se pudieron obtener las coordenadas de la dirección.")
     
-elif selected_option == "Comparación de Documentos":
-    # Carga de Bill of Lading
-    st.header("Cargar Bill of Lading")
-    uploaded_bl = st.file_uploader("Sube tu archivo de Bill of Lading (PDF)", type=["pdf"], key="bl")
+#elif selected_option == "Comparación de Documentos":
+# Carga de Bill of Lading
+st.header("Cargar Bill of Lading")
+uploaded_bl = st.file_uploader("Sube tu archivo de Bill of Lading (PDF)", type=["pdf"], key="bl")
 
-    # Carga de Certificado de Origen
-    st.header("Cargar Certificado de Origen")
-    uploaded_co = st.file_uploader("Sube tu archivo de Certificado de Origen (PDF)", type=["pdf"], key="co")
+# Carga de Certificado de Origen
+st.header("Cargar Certificado de Origen")
+uploaded_co = st.file_uploader("Sube tu archivo de Certificado de Origen (PDF)", type=["pdf"], key="co")
 
-    # Carga de Factura (Commercial Invoice)
-    st.header("Cargar Factura")
-    uploaded_invoice = st.file_uploader("Sube tu archivo de Factura (PDF)", type=["pdf"], key="invoice")
+# Carga de Factura (Commercial Invoice)
+st.header("Cargar Factura")
+uploaded_invoice = st.file_uploader("Sube tu archivo de Factura (PDF)", type=["pdf"], key="invoice")
 
-    # Carga de Lista de Empaque (Packing List)
-    st.header("Cargar Lista de Empaque")
-    uploaded_packing_list = st.file_uploader("Sube tu archivo de Lista de Empaque (PDF)", type=["pdf"], key="packing_list")
+# Carga de Lista de Empaque (Packing List)
+st.header("Cargar Lista de Empaque")
+uploaded_packing_list = st.file_uploader("Sube tu archivo de Lista de Empaque (PDF)", type=["pdf"], key="packing_list")
 
-    # Botón para iniciar la extracción y procesamiento de OCR
-    if st.button("Iniciar procesamiento de OCR"):
-        json_data = {}
+# Botón para iniciar la extracción y procesamiento de OCR
+if st.button("Iniciar procesamiento de OCR"):
+    json_data = {}
 
-        # Procesar cada archivo si fue subido
-        process_document(uploaded_bl, "Bill of Lading", json_data)
-        process_document(uploaded_co, "Certificado de Origen", json_data)
-        process_document(uploaded_invoice, "Factura", json_data)
-        process_document(uploaded_packing_list, "Lista de Empaque", json_data)
+    # Procesar cada archivo si fue subido
+    process_document(uploaded_bl, "Bill of Lading", json_data)
+    process_document(uploaded_co, "Certificado de Origen", json_data)
+    process_document(uploaded_invoice, "Factura", json_data)
+    process_document(uploaded_packing_list, "Lista de Empaque", json_data)
 
-        # Mostrar los resultados de los documentos procesados
-        if json_data:
-            st.write("Datos JSON extraídos de los documentos:")
-            display_extracted_data(json_data)
-            # Mostrar el JSON completo
-            st.subheader("JSON completo generado:")
-            json_str = json.dumps(json_data, indent=4)
-            st.text_area("JSON Generado:", json_str, height=300)
+    # Mostrar los resultados de los documentos procesados
+    if json_data:
+        st.write("Datos JSON extraídos de los documentos:")
+        display_extracted_data(json_data)
+        # Mostrar el JSON completo
+        st.subheader("JSON completo generado:")
+        json_str = json.dumps(json_data, indent=4)
+        st.text_area("JSON Generado:", json_str, height=300)
 
-            # Botón para descargar el JSON generado
-            st.download_button(
-                label="Descargar JSON",
-                data=json_str,
-                file_name="documentos_procesados.json",
-                mime="application/json"
-            )
-        else:
-            st.warning("No se extrajeron datos de los documentos.")
+        # Botón para descargar el JSON generado
+        st.download_button(
+            label="Descargar JSON",
+            data=json_str,
+            file_name="documentos_procesados.json",
+            mime="application/json"
+        )
+    else:
+        st.warning("No se extrajeron datos de los documentos.")
             
             
 #-------------------------------------------#            
