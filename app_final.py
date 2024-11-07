@@ -389,8 +389,8 @@ def process_document(uploaded_file, document_type, json_data):
             if json_template:
                 parsed_json = parse_as_json(extracted_text, json_template)
                 if parsed_json: 
-                    json_data[uploaded_file.name] = parsed_json
-
+                    #json_data[uploaded_file.name] = parsed_json
+                    json_data[document_type] = parsed_json
 
 # Cargar la plantilla adecuada según el tipo de documento
 def get_json_template(document_type):
