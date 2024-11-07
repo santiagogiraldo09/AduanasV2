@@ -10,7 +10,7 @@ import os
 # Configurar las credenciales de Azure
 AZURE_ENDPOINT = "https://iacdemoaduanas.cognitiveservices.azure.com/"  # Cambia por tu endpoint real
 AZURE_KEY = "e44dceb20f40469291dd107c2689e556"  # Cambia por tu API Key real
-AZURE_OPENAI_ENDPOINT = "https://iac-demo-aduanas.openai.azure.com/"  # Coloca tu endpoint de Azure OpenAI
+AZURE_OPENAI_ENDPOINT = "https://iac-demo-aduanas.openai.azure.com"  # Coloca tu endpoint de Azure OpenAI
 AZURE_OPENAI_KEY = "e68adbe619e241f7bb9c9d25389743d2"  # Coloca tu clave de Azure OpenAI
 
 # Configurar cliente de Azure Computer Vision
@@ -78,7 +78,7 @@ def parse_as_json(text, json_template):
     ]
 
     response = openai.ChatCompletion.create(
-        model="Aduanas",
+        deployment_id="Aduanas",
         messages=messages,
         max_tokens=4096,
         temperature=0
@@ -137,7 +137,7 @@ def compare_fields_with_openai(fields_invoice, fields_packing_list):
     ]
 
     response = openai.ChatCompletion.create(
-        engine="Aduanas",  # Asegúrate de que este es el modelo correcto
+        deployment_id="Aduanas",  # Asegúrate de que este es el modelo correcto
         messages=messages,
         max_tokens=1000,
         temperature=0
