@@ -77,7 +77,7 @@ def parse_as_json(text, json_template):
         )}
     ]
 
-    response = openai.ChatCompletions.create(
+    response = openai.ChatCompletion.create(
         model="Aduanas",
         messages=messages,
         max_tokens=4096,
