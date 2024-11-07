@@ -421,10 +421,10 @@ def get_json_template(document_type):
         return None
 
 # Función para comparar campos con OpenAI
-def compare_fields_with_openai(json_data):
-    if 'Factura' in json_data and 'Lista de Empaque' in json_data:
-        invoice_json = json_data['Factura']
-        packing_list_json = json_data['Lista de Empaque']
+def compare_fields_with_openai(json_data_invoice, json_data_packing_list):
+    if 'Factura' in json_data_invoice and 'Lista de Empaque' in json_data_packing_list:
+        invoice_json = json_data_invoice['Factura']
+        packing_list_json = json_data_packing_list['Lista de Empaque']
         
         invoice_text = json.dumps(invoice_json, indent=2)
         packing_list_text = json.dumps(packing_list_json, indent=2)
@@ -500,30 +500,34 @@ uploaded_packing_list = st.file_uploader("Sube tu archivo de Lista de Empaque (P
 
 # Botón para iniciar la extracción y procesamiento de OCR
 if st.button("Iniciar procesamiento de OCR"):
-    json_data = {}
+    json_data_invoice = {}
+    json_data_packing_list = {}
 
     # Procesar cada archivo si fue subido
-    process_document(uploaded_invoice, "Factura", json_data)
-    process_document(uploaded_packing_list, "Lista de Empaque", json_data)
+    process_document(uploaded_invoice, "Factura", json_data_invoice)
+    process_document(uploaded_packing_list, "Lista de Empaque", json_data_packing_list)
 
     # Mostrar los resultados de los documentos procesados
-    if json_data:
+    if json_data_invoice and json_data_packing_list:
         #st.write("Datos JSON extraídos de los documentos:")
         #display_extracted_data(json_data)
         # Mostrar el JSON completo
-        st.subheader("JSON completo generado:")
-        json_str = json.dumps(json_data, indent=4, ensure_ascii=False)
-        st.text_area("JSON Generado:", json_str, height=300)
+        st.subheader("JSON  de la Factura completo generado:")
+        json_str_invoice = json.dumps(json_data_invoice, indent=4, ensure_ascii=False)
+        st.text_area("JSON Generado:", json_str_invoice, height=300)
+        st.subheader("JSON de la Lista de Empaque generado:")
+        json_str_packing_list = json.dumps(json_data_packing_list, indent=4, ensure_ascii=False)
+        st.text_area("JSON Generado:", json_str_packing_list, height=300)
 
         # Botón para descargar el JSON generado
-        st.download_button(
-            label="Descargar JSON",
-            data=json_str,
-            file_name="documentos_procesados.json",
-            mime="application/json"
-        )
+        #st.download_button(
+            #label="Descargar JSON",
+            #data=json_str,
+            #file_name="documentos_procesados.json",
+            #mime="application/json"
+        #)
         # Realizar la comparación usando OpenAI
-        comparison_result = compare_fields_with_openai(json_data)
+        comparison_result = compare_fields_with_openai(json_data_invoice, json_data_packing_list)
 
         # Mostrar los resultados de la comparación
         display_comparison_results(comparison_result)
