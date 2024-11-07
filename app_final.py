@@ -4,7 +4,7 @@ import json
 from azure.cognitiveservices.vision.computervision import ComputerVisionClient
 from azure.cognitiveservices.vision.computervision.models import OperationStatusCodes
 from msrest.authentication import CognitiveServicesCredentials
-from openai import AzureOpenAI
+import openai
 import os
 
 # Configurar las credenciales de Azure
@@ -17,11 +17,16 @@ AZURE_OPENAI_KEY = "e68adbe619e241f7bb9c9d25389743d2"  # Coloca tu clave de Azur
 cv_client = ComputerVisionClient(AZURE_ENDPOINT, CognitiveServicesCredentials(AZURE_KEY))
 
 # Configurar cliente de Azure OpenAI
-openai_client = AzureOpenAI(
-    azure_endpoint=AZURE_OPENAI_ENDPOINT,
-    api_key=AZURE_OPENAI_KEY,
-    api_version="2024-02-01"
-)
+#openai_client = AzureOpenAI(
+    #azure_endpoint=AZURE_OPENAI_ENDPOINT,
+    #api_key=AZURE_OPENAI_KEY,
+    #api_version="2024-02-01"
+#)
+
+openai.api_type = "azure"
+openai.api_base = AZURE_OPENAI_ENDPOINT
+openai.api_version = "2023-03-15-preview"  # Asegúrate de usar la versión correcta
+openai.api_key = AZURE_OPENAI_KEY
 
 # Función para extraer texto de PDF usando OCR de Azure
 async def ocr_with_azure(file_stream, client):
@@ -72,7 +77,7 @@ def parse_as_json(text, json_template):
         )}
     ]
 
-    response = openai_client.chat.completions.create(
+    response = openai.ChatCompletions.create(
         model="Aduanas",
         messages=messages,
         max_tokens=4096,
@@ -105,7 +110,7 @@ def process_document(uploaded_file, document_type, json_data):
 
         if extracted_text:
             #st.write(f"Texto extraído de {uploaded_file.name}:")
-            st.text(extracted_text)
+            #st.text(extracted_text)
 
             # Cargar la plantilla adecuada
             json_template = get_json_template(document_type)
@@ -131,7 +136,7 @@ def compare_fields_with_openai(fields_invoice, fields_packing_list):
         )}
     ]
 
-    response = openai_client.chat_completions.create(
+    response = openai.ChatCompletion.create(
         engine="Aduanas",  # Asegúrate de que este es el modelo correcto
         messages=messages,
         max_tokens=1000,
