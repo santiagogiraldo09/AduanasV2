@@ -7,7 +7,6 @@ from msrest.authentication import CognitiveServicesCredentials
 from openai import AzureOpenAI
 import os
 import requests
-import math
 import re
 from geopy.distance import geodesic
 from io import BytesIO
@@ -537,12 +536,12 @@ st.title("Comparación de Documentos - Aduanas")
     
 #elif selected_option == "Comparación de Documentos":
 # Carga de Bill of Lading
-st.header("Cargar Bill of Lading")
-uploaded_bl = st.file_uploader("Sube tu archivo de Bill of Lading (PDF)", type=["pdf"], key="bl")
+#st.header("Cargar Bill of Lading")
+#uploaded_bl = st.file_uploader("Sube tu archivo de Bill of Lading (PDF)", type=["pdf"], key="bl")
 
 # Carga de Certificado de Origen
-st.header("Cargar Certificado de Origen")
-uploaded_co = st.file_uploader("Sube tu archivo de Certificado de Origen (PDF)", type=["pdf"], key="co")
+#st.header("Cargar Certificado de Origen")
+#uploaded_co = st.file_uploader("Sube tu archivo de Certificado de Origen (PDF)", type=["pdf"], key="co")
 
 # Carga de Factura (Commercial Invoice)
 st.header("Cargar Factura")
@@ -557,8 +556,8 @@ if st.button("Iniciar procesamiento de OCR"):
     json_data = {}
 
     # Procesar cada archivo si fue subido
-    process_document(uploaded_bl, "Bill of Lading", json_data)
-    process_document(uploaded_co, "Certificado de Origen", json_data)
+    #process_document(uploaded_bl, "Bill of Lading", json_data)
+    #process_document(uploaded_co, "Certificado de Origen", json_data)
     process_document(uploaded_invoice, "Factura", json_data)
     process_document(uploaded_packing_list, "Lista de Empaque", json_data)
 
@@ -580,14 +579,3 @@ if st.button("Iniciar procesamiento de OCR"):
         )
     else:
         st.warning("No se extrajeron datos de los documentos.")
-            
-            
-#-------------------------------------------#            
-#if coordenadas_rut:
-    #st.subheader("Categorización de la Dirección")
-    #categoria = categorizar_zona(coordenadas_rut[0], coordenadas_rut[1])
-    #st.write(f"Categoría: {categoria}")
-    
-    # Obtener la imagen del mapa
-    #imagen_mapa = obtener_imagen_mapa(coordenadas_rut[0], coordenadas_rut[1])
-    #st.image(imagen_mapa, caption="Ubicación de la dirección RUT", use_column_width=True)
