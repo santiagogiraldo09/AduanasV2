@@ -465,12 +465,12 @@ def get_json_template(document_type):
 st.title("Comparación de Documentos - Aduanas")
 
 # Carga de Bill of Lading
-st.header("Cargar Bill of Lading")
-uploaded_bl = st.file_uploader("Sube tu archivo de Bill of Lading (PDF)", type=["pdf"], key="bl")
+#st.header("Cargar Bill of Lading")
+#uploaded_bl = st.file_uploader("Sube tu archivo de Bill of Lading (PDF)", type=["pdf"], key="bl")
 
 # Carga de Certificado de Origen
-st.header("Cargar Certificado de Origen")
-uploaded_co = st.file_uploader("Sube tu archivo de Certificado de Origen (PDF)", type=["pdf"], key="co")
+#st.header("Cargar Certificado de Origen")
+#uploaded_co = st.file_uploader("Sube tu archivo de Certificado de Origen (PDF)", type=["pdf"], key="co")
 
 # Carga de Factura (Commercial Invoice)
 st.header("Cargar Factura")
@@ -485,15 +485,15 @@ if st.button("Iniciar procesamiento de OCR"):
     json_data = {}
 
     # Procesar cada archivo si fue subido
-    process_document(uploaded_bl, "Bill of Lading", json_data)
-    process_document(uploaded_co, "Certificado de Origen", json_data)
+    #process_document(uploaded_bl, "Bill of Lading", json_data)
+    #process_document(uploaded_co, "Certificado de Origen", json_data)
     process_document(uploaded_invoice, "Factura", json_data)
     process_document(uploaded_packing_list, "Lista de Empaque", json_data)
 
     # Mostrar los resultados de los documentos procesados
     if json_data:
-        st.write("Datos JSON extraídos de los documentos:")
-        display_extracted_data(json_data)
+        #st.write("Datos JSON extraídos de los documentos:")
+        #display_extracted_data(json_data)
         # Mostrar el JSON completo
         st.subheader("JSON completo generado:")
         json_str = json.dumps(json_data, indent=4)
