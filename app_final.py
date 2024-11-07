@@ -423,7 +423,7 @@ def process_document(uploaded_file, document_type, json_data):
 
         if extracted_text:
             #st.write(f"Texto extraído de {uploaded_file.name}:")
-            st.text(extracted_text)
+            #st.text(extracted_text)
 
             # Cargar la plantilla adecuada
             json_template = get_json_template(document_type)
