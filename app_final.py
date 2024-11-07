@@ -332,47 +332,6 @@ def display_extracted_data(json_data):
             shipment_details = doc_data["packing_list"].get("shipment_details", {})
             #st.write(f"Ciudad de destino: {shipment_details.get('country_of_final_destination', 'No disponible')}")
             
-        elif "RUT" in doc_data:
-           NIT = doc_data["RUT"].get("NIT", {})
-           st.write(f"Número de NIT: {NIT.get('number', 'No disponible')}")
-           address = doc_data["RUT"].get("address", {})
-           primary_address = address.get("primary", {})
-           streetRUT = primary_address.get("street", "No disponible")
-           st.write(f"Dirección RUT: {streetRUT}") 
-           
-        elif "Camara_de_Comercio" in doc_data:
-            company_name = doc_data.get("Camara_de_Comercio", {}).get("company_name", "No disónible")
-            # Acceder a la dirección (street) dentro de "Camara_de_Comercio" -> "address"
-            address = doc_data.get("Camara_de_Comercio", {}).get("address", {})
-            streetCC = address.get("street", "No disponible")
-            
-            # Mostrar los valores
-            st.write(f"Nombre de la empresa: {company_name}")
-            st.write(f"Dirección Cámara de Comercio: {streetCC}")            
-       
-            
-    #Si las direcciones de la factura y lista de empaque existen, proceder con la geocodificación y comparación
-    #-------------------Está por hacerse-----------------------#
-    ##if addressInv and streetLista_Empaque:
-        # Normalizar direcciones
-        ##direccion_Inv_normalizada = clean_and_normalize_address(addressInv)
-        ##direccion_ListaEmpaque_normalizada = clean_and_normalize_address(streetLista_empaque)
-        #Obtener coordenadas
-        ##coordenadas_Invoice = obtener_coordenadas(direccion_Inv_normalizada)
-        ##coordenadas_ListaEmpaque = obtener_coordenadas(direccion_ListaEmpaque_normalizada)
-        #Mostrar coordenadas en pantalla
-        ##st.write(f"Coordenadas de la dirección de factura: {coordenadas_Invoice}")
-        ##st.write(f"Coordenadas de la dirección RUT: {coordenadas_ListaEmpaque}")
-        ##if coordenadas_Invoice and coordenadas_ListaEmpaque:
-            ##if comparar_coordenadas(coordenadas_Invoice, coordenadas_ListaEmpaque, umbral_metros=50):
-                ##st.success("Las direcciones están dentro del margen de 50 metros.")
-            ##else:
-                ##st.error("Las direcciones están a más de 50 metros de distancia.")
-        ##else:
-            ##st.error("No se pudo obtener las coordenadas de una o ambas direcciones.")
-        
-    #Si las direcciones de BL y "", proceder con la geocodificación y comparación
-            
     #comparación de números de factura y fecha
     if invoice_reference_number and packing_list_invoice_number and invoice_date and packing_list_date:
         resultado_comparacion_fechas = comparar_fechas(invoice_date, packing_list_date)
@@ -461,16 +420,75 @@ def get_json_template(document_type):
         st.error(f"Archivo de plantilla no encontrado: {template_path}")
         return None
 
+# Función para comparar campos con OpenAI
+def compare_fields_with_openai(json_data):
+    if 'Factura' in json_data and 'Lista de Empaque' in json_data:
+        invoice_json = json_data['Factura']
+        packing_list_json = json_data['Lista de Empaque']
+        
+        invoice_text = json.dumps(invoice_json, indent=2)
+        packing_list_text = json.dumps(packing_list_json, indent=2)
+
+        messages = [
+            {"role": "system", "content": "Eres un experto en análisis de documentos comerciales y puedes comparar campos específicos entre diferentes documentos."},
+            {"role": "user", "content": (
+                "Tienes los siguientes dos documentos en formato JSON:\n\n"
+                f"Factura:\n{invoice_text}\n\n"
+                f"Lista de Empaque:\n{packing_list_text}\n\n"
+                "Necesito que compares los siguientes campos entre ambos documentos:\n"
+                "- Número de factura (invoice number)\n"
+                "- Dirección de entrega (shipping address) en la factura y la lista de empaque\n"
+                "- Fecha de la factura y fecha de la lista de empaque\n\n"
+                "Proporciona un informe detallado de las comparaciones, indicando si los campos coinciden o no, y explica cualquier discrepancia encontrada.\n"
+                "Responde en formato JSON con la siguiente estructura:\n\n"
+                "{\n"
+                "  \"invoice_number_match\": \"Sí/No\",\n"
+                "  \"invoice_number_details\": \"\",\n"
+                "  \"date_match\": \"Sí/No\",\n"
+                "  \"date_details\": \"\",\n"
+                "  \"address_match\": \"Sí/No\",\n"
+                "  \"address_details\": \"\"\n"
+                "}\n"
+                "Responde únicamente con el JSON, sin explicaciones adicionales."
+            )}
+        ]
+
+        response = openai_client.chat.completions.create(
+            model="Aduanas",
+            messages=messages,
+            max_tokens=500,
+            temperature=0
+        )
+
+        if response.choices:
+            comparison_result = response.choices[0].message.content.strip()
+            try:
+                return json.loads(comparison_result)
+            except json.JSONDecodeError as e:
+                st.error(f"Error al decodificar el JSON generado: {e}")
+                return None
+        else:
+            st.error("No se obtuvo una respuesta válida del modelo.")
+            return None
+    else:
+        st.error("No se encontraron ambos documentos para comparar.")
+        return None
+
+# Función para mostrar resultados de la comparación
+def display_comparison_results(comparison_result):
+    if comparison_result:
+        st.subheader("Resultados de la Comparación:")
+        st.write(f"**Número de factura coincide:** {comparison_result.get('invoice_number_match', 'No disponible')}")
+        st.write(f"Detalles: {comparison_result.get('invoice_number_details', '')}")
+        st.write(f"**Fecha coincide:** {comparison_result.get('date_match', 'No disponible')}")
+        st.write(f"Detalles: {comparison_result.get('date_details', '')}")
+        st.write(f"**Dirección coincide:** {comparison_result.get('address_match', 'No disponible')}")
+        st.write(f"Detalles: {comparison_result.get('address_details', '')}")
+    else:
+        st.error("No se pudo obtener los resultados de la comparación.")
+
 # Interfaz de Streamlit con opciones de procesamiento
 st.title("Comparación de Documentos - Aduanas")
-
-# Carga de Bill of Lading
-#st.header("Cargar Bill of Lading")
-#uploaded_bl = st.file_uploader("Sube tu archivo de Bill of Lading (PDF)", type=["pdf"], key="bl")
-
-# Carga de Certificado de Origen
-#st.header("Cargar Certificado de Origen")
-#uploaded_co = st.file_uploader("Sube tu archivo de Certificado de Origen (PDF)", type=["pdf"], key="co")
 
 # Carga de Factura (Commercial Invoice)
 st.header("Cargar Factura")
@@ -485,8 +503,6 @@ if st.button("Iniciar procesamiento de OCR"):
     json_data = {}
 
     # Procesar cada archivo si fue subido
-    #process_document(uploaded_bl, "Bill of Lading", json_data)
-    #process_document(uploaded_co, "Certificado de Origen", json_data)
     process_document(uploaded_invoice, "Factura", json_data)
     process_document(uploaded_packing_list, "Lista de Empaque", json_data)
 
@@ -496,7 +512,7 @@ if st.button("Iniciar procesamiento de OCR"):
         #display_extracted_data(json_data)
         # Mostrar el JSON completo
         st.subheader("JSON completo generado:")
-        json_str = json.dumps(json_data, indent=4)
+        json_str = json.dumps(json_data, indent=4, ensure_ascii=False)
         st.text_area("JSON Generado:", json_str, height=300)
 
         # Botón para descargar el JSON generado
@@ -506,5 +522,10 @@ if st.button("Iniciar procesamiento de OCR"):
             file_name="documentos_procesados.json",
             mime="application/json"
         )
+        # Realizar la comparación usando OpenAI
+        comparison_result = compare_fields_with_openai(json_data)
+
+        # Mostrar los resultados de la comparación
+        display_comparison_results(comparison_result)
     else:
         st.warning("No se extrajeron datos de los documentos.")
