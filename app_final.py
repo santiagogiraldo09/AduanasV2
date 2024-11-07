@@ -439,6 +439,7 @@ def compare_fields_with_openai(json_data_invoice, json_data_packing_list):
                 "- Número de factura (invoice number)\n"
                 "- Dirección de entrega (shipping address) en la factura y la lista de empaque\n"
                 "- Fecha de la factura y fecha de la lista de empaque\n\n"
+                "La comparación entre las fechas y las direcciones debe hacerse por su semántica y no por su similitud en el texto, ya que pueden haber formatos diferentes pero significar lo misom. Ejemplo: 22-11-2024 es igual a 22/11/2024 e igual a 22 de nov del 2024"
                 "Proporciona un informe detallado de las comparaciones, indicando si los campos coinciden o no, y explica cualquier discrepancia encontrada.\n"
                 "Responde en formato JSON con la siguiente estructura:\n\n"
                 "{\n"
