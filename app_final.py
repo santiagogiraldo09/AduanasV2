@@ -223,8 +223,8 @@ def parse_as_json(text, json_template):
     if response.choices:
         parsed_json_text = response.choices[0].message.content.strip()
         cleaned_json_text = clean_json_text(parsed_json_text)
-        st.write("Respuesta del modelo:")
-        st.code(cleaned_json_text)
+        #st.write("Respuesta del modelo:")
+        #st.code(cleaned_json_text)
 
         try:
             return json.loads(cleaned_json_text)
@@ -485,8 +485,8 @@ def compare_fields_with_openai(json_data_invoice, json_data_packing_list):
 
         if response.choices:
             comparison_result = response.choices[0].message.content.strip()
-            st.write("Respuesta del modelo:")
-            st.code(comparison_result)
+            #st.write("Respuesta del modelo:")
+            #st.code(comparison_result)
 
             try:
                 return json.loads(comparison_result)
