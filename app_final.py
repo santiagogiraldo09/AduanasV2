@@ -9,6 +9,8 @@ import os
 import requests
 import math
 import re
+import zipfile
+import io
 from geopy.distance import geodesic
 from io import BytesIO
 from PIL import Image
@@ -221,6 +223,9 @@ def parse_as_json(text, json_template):
     if response.choices:
         parsed_json_text = response.choices[0].message.content.strip()
         cleaned_json_text = clean_json_text(parsed_json_text)
+        st.write("Respuesta del modelo:")
+        st.code(cleaned_json_text)
+
         try:
             return json.loads(cleaned_json_text)
         except json.JSONDecodeError as e:
@@ -421,6 +426,21 @@ def get_json_template(document_type):
         st.error(f"Archivo de plantilla no encontrado: {template_path}")
         return None
 
+def create_zip_file(json_str_invoice, json_str_packing_list):
+    # Crear un buffer en memoria
+    zip_buffer = io.BytesIO()
+    
+    # Crear un archivo ZIP en el buffer
+    with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
+        # Agregar el archivo de la factura
+        zip_file.writestr("invoice.json", json_str_invoice)
+        # Agregar el archivo de la lista de empaque
+        zip_file.writestr("packing_list.json", json_str_packing_list)
+    
+    # Mover el puntero al inicio del buffer
+    zip_buffer.seek(0)
+    return zip_buffer
+
 # Función para comparar campos con OpenAI
 def compare_fields_with_openai(json_data_invoice, json_data_packing_list):
     if 'Factura' in json_data_invoice and 'Lista de Empaque' in json_data_packing_list:
@@ -465,6 +485,9 @@ def compare_fields_with_openai(json_data_invoice, json_data_packing_list):
 
         if response.choices:
             comparison_result = response.choices[0].message.content.strip()
+            st.write("Respuesta del modelo:")
+            st.code(comparison_result)
+
             try:
                 return json.loads(comparison_result)
             except json.JSONDecodeError as e:
@@ -529,6 +552,18 @@ if st.button("Iniciar procesamiento de OCR"):
             #file_name="documentos_procesados.json",
             #mime="application/json"
         #)
+        
+        # Crear el archivo ZIP en memoria
+        zip_buffer = create_zip_file(json_str_invoice, json_str_packing_list)
+
+        # Botón para descargar el archivo ZIP
+        st.download_button(
+            label="Descargar JSONs como ZIP",
+            data=zip_buffer,
+            file_name="documentos_procesados.zip",
+            mime="application/zip"
+        )
+        
         # Realizar la comparación usando OpenAI
         comparison_result = compare_fields_with_openai(json_data_invoice, json_data_packing_list)
 
